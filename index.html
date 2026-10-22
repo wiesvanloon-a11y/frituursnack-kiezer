@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frituur Random Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Font Inter & Fredoka for fun headers -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        fryYellow: '#FFC72C',
+                        fryGold: '#E6A100',
+                        frituurRed: '#DA291C',
+                        frituurDarkRed: '#A6190E',
+                        bgWarm: '#FFFBEB',
+                    },
+                    fontFamily: {
+                        fredoka: ['Fredoka One', 'cursive'],
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .slot-container {
+            overflow: hidden;
+            position: relative;
+        }
+        .slot-reel {
+            transition: transform 0.1s linear;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-amber-50/50 min-h-screen text-slate-800 font-sans pb-12">
+
+    <!-- Header Banner -->
+    <header class="bg-gradient-to-r from-frituurRed via-red-600 to-frituurDarkRed text-white py-6 px-4 shadow-lg border-b-4 border-fryYellow relative overflow-hidden">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 relative z-10">
+            <div class="flex items-center gap-3 text-center md:text-left">
+                <div class="bg-fryYellow text-frituurDarkRed p-3 rounded-2xl shadow-inner text-3xl transform -rotate-3 border-2 border-white">
+                    🍟
+                </div>
+                <div>
+                    <h1 class="font-fredoka text-3xl sm:text-4xl tracking-wide text-amber-300 drop-shadow-md">
+                        De Frituur Generator
+                    </h1>
+                    <p class="text-xs sm:text-sm text-red-100 font-medium">
+                        Keuzestress bij de frituur? Laat het lot jouw bestelling bepalen!
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button id="btnQuickCombo" onclick="spinBoth()" class="bg-fryYellow hover:bg-yellow-400 text-frituurDarkRed font-bold px-5 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all transform active:scale-95 flex items-center gap-2 border-2 border-amber-200">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    <span>Volledig Menu Kiezen</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 mt-8 space-y-8">
+
+        <!-- SLOT MACHINE DISPLAY CARDS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <!-- CARD 1: BURGERS & SNACKS -->
+            <div class="bg-white rounded-2xl shadow-xl border-2 border-amber-200 overflow-hidden flex flex-col justify-between relative">
+                <div class="bg-amber-100/70 p-4 border-b border-amber-200 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">🍔</span>
+                        <h2 class="font-bold text-lg text-slate-800">Snacks & Burgers</h2>
+                    </div>
+                    <span id="snackCountBadge" class="bg-amber-200 text-amber-900 text-xs font-semibold px-2.5 py-1 rounded-full">
+                        0/0 actief
+                    </span>
+                </div>
+
+                <!-- Slot Display Window -->
+                <div class="p-6 bg-gradient-to-b from-amber-50 to-white text-center flex-1 flex flex-col justify-center items-center min-h-[200px]">
+                    <div id="snackSlotBox" class="w-full py-6 px-4 bg-white rounded-xl shadow-inner border-2 border-dashed border-amber-300 flex flex-col items-center justify-center transition-all">
+                        <span id="snackIcon" class="text-4xl mb-2">🍔</span>
+                        <h3 id="snackResultTitle" class="font-fredoka text-2xl text-slate-800">Druk op de knop!</h3>
+                        <p id="snackResultPrice" class="text-frituurRed font-bold text-lg mt-1 min-h-[28px]"></p>
+                        <div id="snackResultStars" class="text-amber-400 text-sm mt-1">⭐⭐⭐⭐⭐</div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-amber-50/50 border-t border-amber-100 flex gap-2">
+                    <button id="btnSpinSnack" onclick="spinSnack()" class="w-full bg-frituurRed hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <i data-lucide="dices" class="w-5 h-5"></i>
+                        <span>Kies Willekeurige Snack/Burger</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CARD 2: SAUZEN -->
+            <div class="bg-white rounded-2xl shadow-xl border-2 border-amber-200 overflow-hidden flex flex-col justify-between relative">
+                <div class="bg-amber-100/70 p-4 border-b border-amber-200 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="text-2xl">🥫</span>
+                        <h2 class="font-bold text-lg text-slate-800">Sauzen</h2>
+                    </div>
+                    <span id="sauceCountBadge" class="bg-amber-200 text-amber-900 text-xs font-semibold px-2.5 py-1 rounded-full">
+                        0/0 actief
+                    </span>
+                </div>
+
+                <!-- Slot Display Window -->
+                <div class="p-6 bg-gradient-to-b from-amber-50 to-white text-center flex-1 flex flex-col justify-center items-center min-h-[200px]">
+                    <div id="sauceSlotBox" class="w-full py-6 px-4 bg-white rounded-xl shadow-inner border-2 border-dashed border-amber-300 flex flex-col items-center justify-center transition-all">
+                        <span id="sauceIcon" class="text-4xl mb-2">🥫</span>
+                        <h3 id="sauceResultTitle" class="font-fredoka text-2xl text-slate-800">Druk op de knop!</h3>
+                        <p id="sauceResultPrice" class="text-frituurRed font-bold text-lg mt-1 min-h-[28px]"></p>
+                        <div id="sauceResultStars" class="text-amber-400 text-sm mt-1">⭐⭐⭐⭐⭐</div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-amber-50/50 border-t border-amber-100 flex gap-2">
+                    <button id="btnSpinSauce" onclick="spinSauce()" class="w-full bg-fryYellow hover:bg-yellow-400 text-frituurDarkRed font-bold py-3 px-4 rounded-xl shadow transition-all active:scale-95 flex items-center justify-center gap-2">
+                        <i data-lucide="dices" class="w-5 h-5"></i>
+                        <span>Kies Willekeurige Saus</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TOTAL COMBO BANNER (Hidden until spun) -->
+        <div id="comboBanner" class="hidden bg-gradient-to-r from-amber-500 to-frituurRed text-white p-6 rounded-2xl shadow-xl text-center border-2 border-amber-300 transition-all transform animate-bounce-short">
+            <h3 class="text-xs uppercase tracking-wider text-amber-100 font-bold mb-1">Jouw Frituur Bestelling</h3>
+            <div class="text-2xl sm:text-3xl font-fredoka flex items-center justify-center gap-2 flex-wrap">
+                <span id="comboSnackText" class="text-amber-200">...</span> 
+                <span class="text-amber-300">+</span> 
+                <span id="comboSauceText" class="text-amber-200">...</span>
+            </div>
+            <p id="comboTotalPrice" class="mt-2 text-lg font-bold bg-black/20 inline-block px-4 py-1 rounded-full text-white"></p>
+        </div>
+
+        <!-- ITEMS MANAGER & CHECKLIST -->
+        <div class="bg-white rounded-2xl shadow-xl border-2 border-amber-200 overflow-hidden">
+            <div class="p-5 bg-slate-800 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="font-fredoka text-xl text-amber-300 flex items-center gap-2">
+                        <i data-lucide="list-checks" class="w-5 h-5"></i>
+                        Frituur Menulijst & Filter Opties
+                    </h2>
+                    <p class="text-xs text-slate-300 mt-1">Vink items uit die je niet op het menu wilt hebben in de generator.</p>
+                </div>
+
+                <!-- Global Select Toggles -->
+                <div class="flex gap-2 text-xs">
+                    <button onclick="toggleAll(true)" class="bg-slate-700 hover:bg-slate-600 text-amber-300 px-3 py-1.5 rounded-lg border border-slate-600 transition">
+                        Alles Selecteren
+                    </button>
+                    <button onclick="toggleAll(false)" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-600 transition">
+                        Alles Deselecteren
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="flex border-b border-slate-200 bg-slate-100">
+                <button id="tabBtnAll" onclick="switchTab('all')" class="flex-1 py-3 px-4 font-semibold text-sm border-b-2 border-frituurRed text-frituurRed bg-white">
+                    Alles (<span id="countAll">0</span>)
+                </button>
+                <button id="tabBtnBurgers" onclick="switchTab('burgers')" class="flex-1 py-3 px-4 font-semibold text-sm text-slate-600 hover:text-slate-900 border-b-2 border-transparent">
+                    Hamburgers (<span id="countBurgers">0</span>)
+                </button>
+                <button id="tabBtnSnacks" onclick="switchTab('snacks')" class="flex-1 py-3 px-4 font-semibold text-sm text-slate-600 hover:text-slate-900 border-b-2 border-transparent">
+                    Snacks (<span id="countSnacks">0</span>)
+                </button>
+                <button id="tabBtnSauzen" onclick="switchTab('sauzen')" class="flex-1 py-3 px-4 font-semibold text-sm text-slate-600 hover:text-slate-900 border-b-2 border-transparent">
+                    Sauzen (<span id="countSauzen">0</span>)
+                </button>
+            </div>
+
+            <!-- Search bar inside menu -->
+            <div class="p-4 border-b border-slate-100 bg-amber-50/30 flex gap-2">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="renderMenuList()" placeholder="Zoek een burger, snack of saus..." class="w-full pl-9 pr-4 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-frituurRed">
+                </div>
+            </div>
+
+            <!-- Menu Item Grid -->
+            <div id="menuContainer" class="p-4 max-h-[450px] overflow-y-auto custom-scrollbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <!-- Items injected by JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="mt-12 text-center text-xs text-slate-500">
+        <p>© De Frituur Random Generator • Smakelijk eten! 🍟</p>
+    </footer>
+
+    <!-- Audio Web API for Sound Effects -->
+    <script>
+        // Simple Web Audio API Synthesizer for fun Retro Sound Effects
+        const AudioFX = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playTick() {
+                try {
+                    this.init();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400 + Math.random() * 200, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.05);
+                } catch(e) {}
+            },
+            playWin() {
+                try {
+                    this.init();
+                    const now = this.ctx.currentTime;
+                    const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                    notes.forEach((freq, i) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                        gain.gain.setValueAtTime(0.15, now + i * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.25);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now + i * 0.08);
+                        osc.stop(now + i * 0.08 + 0.25);
+                    });
+                } catch(e) {}
+            }
+        };
+
+        // Complete Dataset
+        const rawData = [
+            // BURGERS
+            { id: 'b1', name: 'Bicky Burger', price: 4.00, category: 'burgers', score: 5, enabled: true, icon: '🍔' },
+            { id: 'b2', name: 'Bicky Cheese', price: 4.40, category: 'burgers', score: 5, enabled: true, icon: '🍔' },
+            { id: 'b3', name: 'Bicky Fish', price: 4.60, category: 'burgers', score: 5, enabled: true, icon: '🐟' },
+            { id: 'b4', name: 'Bicky Mexicano', price: 4.90, category: 'burgers', score: 5, enabled: true, icon: '🌶️' },
+            { id: 'b5', name: 'Bicky Royal', price: 5.50, category: 'burgers', score: 5, enabled: true, icon: '👑' },
+            { id: 'b6', name: 'Bicky Wrap', price: 5.20, category: 'burgers', score: 5, enabled: true, icon: '🌯' },
+            { id: 'b7', name: 'Broodje Kroket', price: 3.80, category: 'burgers', score: 5, enabled: true, icon: '🥖' },
+            { id: 'b8', name: 'Vegi Burger', price: 4.30, category: 'burgers', score: 5, enabled: true, icon: '🌱' },
+            { id: 'b9', name: 'Chicken Burger', price: 4.60, category: 'burgers', score: 5, enabled: true, icon: '🍗' },
+            { id: 'b10', name: 'Bicky cheese ribster', price: 4.60, category: 'burgers', score: 5, enabled: true, icon: '🍔' },
+            { id: 'b11', name: 'Bicky chicken', price: 4.80, category: 'burgers', score: 5, enabled: true, icon: '🍗' },
+            { id: 'b12', name: 'Bicky ribster', price: 4.20, category: 'burgers', score: 5, enabled: true, icon: '🍔' },
+            { id: 'b13', name: 'Cheeseburger', price: 4.80, category: 'burgers', score: 5, enabled: true, icon: '🧀' },
+            { id: 'b14', name: 'Hamburger', price: 4.00, category: 'burgers', score: 5, enabled: true, icon: '🍔' },
+            { id: 'b15', name: 'Peperburger', price: 4.90, category: 'burgers', score: 5, enabled: true, icon: '🌶️' },
+
+            // SNACKS
+            { id: 's1', name: 'Kipcorn', price: 3.00, category: 'snacks', score: 5, enabled: true, icon: '🌽' },
+            { id: 's2', name: 'Kippenboutjes', price: 4.20, category: 'snacks', score: 5, enabled: true, icon: '🍗' },
+            { id: 's3', name: 'Kipfingers', price: 3.40, category: 'snacks', score: 5, enabled: true, icon: '🖐️' },
+            { id: 's4', name: 'Kipnuggets', price: 3.40, category: 'snacks', score: 5, enabled: true, icon: '🍗' },
+            { id: 's5', name: 'Kipsate', price: 4.00, category: 'snacks', score: 5, enabled: true, icon: '🍢' },
+            { id: 's6', name: 'Kipsate (3st+saus)', price: 5.20, category: 'snacks', score: 5, enabled: true, icon: '🍢' },
+            { id: 's7', name: 'Sate', price: 3.90, category: 'snacks', score: 5, enabled: true, icon: '🍢' },
+            { id: 's8', name: 'Frikandel', price: 2.40, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's9', name: 'Frikandel Speciaal', price: 3.10, category: 'snacks', score: 5, enabled: true, icon: '🧅' },
+            { id: 's10', name: 'Frikandel XXL', price: 3.80, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's11', name: 'Boulet', price: 3.00, category: 'snacks', score: 5, enabled: true, icon: '🧆' },
+            { id: 's12', name: 'Bereklauw', price: 3.80, category: 'snacks', score: 5, enabled: true, icon: '🧅' },
+            { id: 's13', name: 'Berehap', price: 4.00, category: 'snacks', score: 5, enabled: true, icon: '🍢' },
+            { id: 's14', name: 'Bitterballen', price: 2.50, category: 'snacks', score: 5, enabled: true, icon: '🧆' },
+            { id: 's15', name: 'Vleeskroket', price: 2.50, category: 'snacks', score: 5, enabled: true, icon: '🥖' },
+            { id: 's16', name: 'Goulashkroket', price: 2.80, category: 'snacks', score: 5, enabled: true, icon: '🥖' },
+            { id: 's17', name: 'Garnaalkroket', price: 3.20, category: 'snacks', score: 5, enabled: true, icon: '🦐' },
+            { id: 's18', name: 'Kaaskroket', price: 2.00, category: 'snacks', score: 5, enabled: true, icon: '🧀' },
+            { id: 's19', name: 'Kaassoufle', price: 2.70, category: 'snacks', score: 5, enabled: true, icon: '🧀' },
+            { id: 's20', name: 'Viandelle', price: 2.80, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's21', name: 'Spicy Viandelle', price: 2.80, category: 'snacks', score: 5, enabled: true, icon: '🌶️' },
+            { id: 's22', name: 'Vuurvreter', price: 3.30, category: 'snacks', score: 5, enabled: true, icon: '🔥' },
+            { id: 's23', name: 'Mexicano', price: 3.10, category: 'snacks', score: 5, enabled: true, icon: '🌶️' },
+            { id: 's24', name: 'Ragouzi', price: 3.00, category: 'snacks', score: 5, enabled: true, icon: '🥟' },
+            { id: 's25', name: 'Bami', price: 2.50, category: 'snacks', score: 5, enabled: true, icon: '🍜' },
+            { id: 's26', name: 'Nasi', price: 2.50, category: 'snacks', score: 5, enabled: true, icon: '🍚' },
+            { id: 's27', name: 'Mini-Loempia', price: 2.90, category: 'snacks', score: 5, enabled: true, icon: '🌯' },
+            { id: 's28', name: 'Loempia', price: 5.00, category: 'snacks', score: 5, enabled: true, icon: '🌯' },
+            { id: 's29', name: 'Taco', price: 3.60, category: 'snacks', score: 5, enabled: true, icon: '🌮' },
+            { id: 's30', name: 'Piknikker', price: 4.00, category: 'snacks', score: 5, enabled: true, icon: '🍢' },
+            { id: 's31', name: 'Mozzarella Sticks', price: 3.50, category: 'snacks', score: 5, enabled: true, icon: '🧀' },
+            { id: 's32', name: 'Sito', price: 4.00, category: 'snacks', score: 5, enabled: true, icon: '🍢' },
+            { id: 's33', name: 'Twijfelaar', price: 4.20, category: 'snacks', score: 5, enabled: true, icon: '🍢' },
+            { id: 's34', name: 'Cervela', price: 3.10, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's35', name: 'Kidsmix', price: 3.50, category: 'snacks', score: 5, enabled: true, icon: '🎁' },
+            { id: 's36', name: 'Ardeense sate', price: 5.10, category: 'snacks', score: 5, enabled: true, icon: '🍢' },
+            { id: 's37', name: 'Berepoot', price: 4.70, category: 'snacks', score: 5, enabled: true, icon: '🧅' },
+            { id: 's38', name: 'Bockworst', price: 4.10, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's39', name: 'Boulet koud', price: 3.40, category: 'snacks', score: 5, enabled: true, icon: '🧆' },
+            { id: 's40', name: 'Boulet koud sp.', price: 5.40, category: 'snacks', score: 5, enabled: true, icon: '🧅' },
+            { id: 's41', name: 'Boulet sp', price: 5.40, category: 'snacks', score: 5, enabled: true, icon: '🧅' },
+            { id: 's42', name: 'Cervela koud', price: 3.60, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's43', name: 'Cervela koud sp.', price: 4.60, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's44', name: 'Cervela spec', price: 4.60, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's45', name: 'Chicken tenders', price: 4.20, category: 'snacks', score: 5, enabled: true, icon: '🍗' },
+            { id: 's46', name: 'Chili cheese nuggets', price: 4.30, category: 'snacks', score: 5, enabled: true, icon: '🌶️' },
+            { id: 's47', name: 'Curryworst', price: 2.70, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's48', name: 'Curryworst sp', price: 3.70, category: 'snacks', score: 5, enabled: true, icon: '🧅' },
+            { id: 's49', name: 'Kippenvleugels', price: 5.10, category: 'snacks', score: 5, enabled: true, icon: '🍗' },
+            { id: 's50', name: 'Kippets', price: 4.40, category: 'snacks', score: 5, enabled: true, icon: '🍗' },
+            { id: 's51', name: 'Mamoetworst', price: 3.60, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's52', name: 'Mamoetworst sp', price: 4.60, category: 'snacks', score: 5, enabled: true, icon: '🧅' },
+            { id: 's53', name: 'Mini lucifer', price: 4.20, category: 'snacks', score: 5, enabled: true, icon: '🔥' },
+            { id: 's54', name: 'Mini megamix', price: 5.70, category: 'snacks', score: 5, enabled: true, icon: '🎁' },
+            { id: 's55', name: 'Ribster', price: 4.30, category: 'snacks', score: 5, enabled: true, icon: '🍖' },
+            { id: 's56', name: 'Shaslik', price: 5.80, category: 'snacks', score: 5, enabled: true, icon: '🍢' },
+            { id: 's57', name: 'Smullbox +', price: 5.10, category: 'snacks', score: 5, enabled: true, icon: '🎁' },
+            { id: 's58', name: 'Spicy viandel sp.', price: 4.80, category: 'snacks', score: 5, enabled: true, icon: '🌶️' },
+            { id: 's59', name: 'Veggie curryworst', price: 2.90, category: 'snacks', score: 5, enabled: true, icon: '🌱' },
+            { id: 's60', name: 'Veggie curryworst sp', price: 3.90, category: 'snacks', score: 5, enabled: true, icon: '🌱' },
+            { id: 's61', name: 'Viandel sp', price: 4.80, category: 'snacks', score: 5, enabled: true, icon: '🌭' },
+            { id: 's62', name: 'Visstick', price: 5.20, category: 'snacks', score: 5, enabled: true, icon: '🐟' },
+
+            // SAUZEN
+            { id: 'z1', name: 'Mayonaise', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z2', name: 'Hol. Mayonaise', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z3', name: 'Pickels', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z4', name: 'Tartaar', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z5', name: 'Mamoetsaus', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z6', name: 'Andalouse', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z7', name: 'Joppie', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z8', name: 'Samourai', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🔥' },
+            { id: 'z9', name: 'Koude Curry', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z10', name: 'Tomagrec', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z11', name: 'Tom. Ketchup', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z12', name: 'Curry Ketchup', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z13', name: 'Loempiasaus', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z14', name: 'Speciaal', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🧅' },
+            { id: 'z15', name: 'Zilveruitjes', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🧅' },
+            { id: 'z16', name: 'Americain', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z17', name: 'Satésaus', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z18', name: 'Warme Curry', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🫕' },
+            { id: 'z19', name: 'Stoofvleessaus', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🫕' },
+            { id: 'z20', name: 'Stoofvlees', price: null, category: 'sauzen', score: 5, enabled: true, icon: '🍲' },
+            { id: 'z21', name: 'Barbeque', price: 1.00, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z22', name: 'Cocktail', price: 1.00, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z23', name: 'Mosterd', price: 1.00, category: 'sauzen', score: 5, enabled: true, icon: '🥫' },
+            { id: 'z24', name: 'Peper', price: 1.00, category: 'sauzen', score: 5, enabled: true, icon: '🌶️' },
+            { id: 'z25', name: 'Pinda', price: 2.80, category: 'sauzen', score: 5, enabled: true, icon: '🥜' },
+            { id: 'z26', name: 'Speciaal curry', price: 2.00, category: 'sauzen', score: 5, enabled: true, icon: '🧅' },
+            { id: 'z27', name: 'Speciaal curry hol.mayo', price: 2.00, category: 'sauzen', score: 5, enabled: true, icon: '🧅' },
+            { id: 'z28', name: 'Speciaal tomaat', price: 2.00, category: 'sauzen', score: 5, enabled: true, icon: '🧅' },
+            { id: 'z29', name: 'Speciaal tomaat hol.mayo', price: 2.00, category: 'sauzen', score: 5, enabled: true, icon: '🧅' },
+            { id: 'z30', name: 'Speciaal tomagrec', price: 2.00, category: 'sauzen', score: 5, enabled: true, icon: '🧅' },
+            { id: 'z31', name: 'Speciaal tomagrec hol.mayo', price: 2.00, category: 'sauzen', score: 5, enabled: true, icon: '🧅' },
+        ];
+
+        let menuData = [...rawData];
+        let currentTab = 'all';
+        let currentSnackSelection = null;
+        let currentSauceSelection = null;
+
+        // Initialize Icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            updateCounts();
+            renderMenuList();
+        });
+
+        // Tab Switching
+        function switchTab(tab) {
+            currentTab = tab;
+            ['all', 'burgers', 'snacks', 'sauzen'].forEach(t => {
+                const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (t === tab) {
+                    btn.className = "flex-1 py-3 px-4 font-semibold text-sm border-b-2 border-frituurRed text-frituurRed bg-white";
+                } else {
+                    btn.className = "flex-1 py-3 px-4 font-semibold text-sm text-slate-600 hover:text-slate-900 border-b-2 border-transparent";
+                }
+            });
+            renderMenuList();
+        }
+
+        // Render List Checkboxes
+        function renderMenuList() {
+            const container = document.getElementById('menuContainer');
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            
+            const filtered = menuData.filter(item => {
+                const matchesTab = (currentTab === 'all') || 
+                                   (currentTab === 'burgers' && item.category === 'burgers') ||
+                                   (currentTab === 'snacks' && item.category === 'snacks') ||
+                                   (currentTab === 'sauzen' && item.category === 'sauzen');
+                const matchesSearch = item.name.toLowerCase().includes(searchQuery);
+                return matchesTab && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400">Geen items gevonden...</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => `
+                <label class="flex items-center justify-between p-3 rounded-xl border ${item.enabled ? 'border-slate-200 bg-white hover:border-amber-300' : 'border-slate-100 bg-slate-50 opacity-60'} cursor-pointer transition">
+                    <div class="flex items-center gap-2.5 overflow-hidden">
+                        <input type="checkbox" ${item.enabled ? 'checked' : ''} onchange="toggleItem('${item.id}')" class="w-4 h-4 text-frituurRed rounded focus:ring-frituurRed accent-frituurRed cursor-pointer">
+                        <span class="text-lg">${item.icon}</span>
+                        <div class="truncate">
+                            <p class="text-sm font-semibold text-slate-800 truncate">${item.name}</p>
+                            <p class="text-xs text-amber-600 font-medium">${item.price ? '€' + item.price.toFixed(2) : 'Dagprijs'}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs text-amber-400 shrink-0">⭐5</span>
+                </label>
+            `).join('');
+        }
+
+        function toggleItem(id) {
+            const item = menuData.find(i => i.id === id);
+            if (item) {
+                item.enabled = !item.enabled;
+                updateCounts();
+                renderMenuList();
+            }
+        }
+
+        function toggleAll(status) {
+            menuData.forEach(item => {
+                if (currentTab === 'all' || 
+                   (currentTab === 'burgers' && item.category === 'burgers') ||
+                   (currentTab === 'snacks' && item.category === 'snacks') ||
+                   (currentTab === 'sauzen' && item.category === 'sauzen')) {
+                    item.enabled = status;
+                }
+            });
+            updateCounts();
+            renderMenuList();
+        }
+
+        function updateCounts() {
+            const burgerCount = menuData.filter(i => i.category === 'burgers');
+            const snackCount = menuData.filter(i => i.category === 'snacks');
+            const sauceCount = menuData.filter(i => i.category === 'sauzen');
+
+            const activeCombos = menuData.filter(i => (i.category === 'burgers' || i.category === 'snacks') && i.enabled);
+            const activeSauces = menuData.filter(i => i.category === 'sauzen' && i.enabled);
+
+            document.getElementById('countAll').innerText = menuData.length;
+            document.getElementById('countBurgers').innerText = burgerCount.length;
+            document.getElementById('countSnacks').innerText = snackCount.length;
+            document.getElementById('countSauzen').innerText = sauceCount.length;
+
+            document.getElementById('snackCountBadge').innerText = `${activeCombos.length}/${burgerCount.length + snackCount.length} actief`;
+            document.getElementById('sauceCountBadge').innerText = `${activeSauces.length}/${sauceCount.length} actief`;
+        }
+
+        // SPIN LOGIC FOR BURGERS & SNACKS
+        function spinSnack() {
+            const pool = menuData.filter(i => (i.category === 'burgers' || i.category === 'snacks') && i.enabled);
+            if (pool.length === 0) {
+                alert('Geen snacks of burgers geselecteerd in de filterlijst!');
+                return;
+            }
+
+            const btn = document.getElementById('btnSpinSnack');
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            const box = document.getElementById('snackSlotBox');
+            const title = document.getElementById('snackResultTitle');
+            const price = document.getElementById('snackResultPrice');
+            const icon = document.getElementById('snackIcon');
+
+            let ticks = 0;
+            const maxTicks = 20;
+            const interval = setInterval(() => {
+                const randomItem = pool[Math.floor(Math.random() * pool.length)];
+                title.innerText = randomItem.name;
+                price.innerText = randomItem.price ? `€${randomItem.price.toFixed(2)}` : '€ --';
+                icon.innerText = randomItem.icon;
+                
+                AudioFX.playTick();
+                box.classList.add('scale-102');
+                setTimeout(() => box.classList.remove('scale-102'), 50);
+
+                ticks++;
+                if (ticks >= maxTicks) {
+                    clearInterval(interval);
+                    const finalItem = pool[Math.floor(Math.random() * pool.length)];
+                    title.innerText = finalItem.name;
+                    price.innerText = finalItem.price ? `€${finalItem.price.toFixed(2)}` : 'Sausprijs op kaart';
+                    icon.innerText = finalItem.icon;
+                    currentSnackSelection = finalItem;
+
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+
+                    AudioFX.playWin();
+                    updateComboBanner();
+                }
+            }, 80);
+        }
+
+        // SPIN LOGIC FOR SAUZEN
+        function spinSauce() {
+            const pool = menuData.filter(i => i.category === 'sauzen' && i.enabled);
+            if (pool.length === 0) {
+                alert('Geen sauzen geselecteerd in de filterlijst!');
+                return;
+            }
+
+            const btn = document.getElementById('btnSpinSauce');
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            const box = document.getElementById('sauceSlotBox');
+            const title = document.getElementById('sauceResultTitle');
+            const price = document.getElementById('sauceResultPrice');
+            const icon = document.getElementById('sauceIcon');
+
+            let ticks = 0;
+            const maxTicks = 20;
+            const interval = setInterval(() => {
+                const randomItem = pool[Math.floor(Math.random() * pool.length)];
+                title.innerText = randomItem.name;
+                price.innerText = randomItem.price ? `€${randomItem.price.toFixed(2)}` : '€ --';
+                icon.innerText = randomItem.icon;
+
+                AudioFX.playTick();
+                box.classList.add('scale-102');
+                setTimeout(() => box.classList.remove('scale-102'), 50);
+
+                ticks++;
+                if (ticks >= maxTicks) {
+                    clearInterval(interval);
+                    const finalItem = pool[Math.floor(Math.random() * pool.length)];
+                    title.innerText = finalItem.name;
+                    price.innerText = finalItem.price ? `€${finalItem.price.toFixed(2)}` : 'Standaard Frituur Saus';
+                    icon.innerText = finalItem.icon;
+                    currentSauceSelection = finalItem;
+
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50');
+
+                    AudioFX.playWin();
+                    updateComboBanner();
+                }
+            }, 80);
+        }
+
+        // SPIN BOTH AT ONCE
+        function spinBoth() {
+            spinSnack();
+            spinSauce();
+
+            setTimeout(() => {
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+            }, 1800);
+        }
+
+        function updateComboBanner() {
+            if (currentSnackSelection && currentSauceSelection) {
+                const banner = document.getElementById('comboBanner');
+                banner.classList.remove('hidden');
+
+                document.getElementById('comboSnackText').innerText = `${currentSnackSelection.icon} ${currentSnackSelection.name}`;
+                document.getElementById('comboSauceText').innerText = `${currentSauceSelection.icon} ${currentSauceSelection.name}`;
+
+                let totalCost = 0;
+                let priceText = "";
+                if (currentSnackSelection.price) totalCost += currentSnackSelection.price;
+                if (currentSauceSelection.price) totalCost += currentSauceSelection.price;
+
+                if (totalCost > 0) {
+                    priceText = `Geschatte Totaalprijs: €${totalCost.toFixed(2)}`;
+                } else {
+                    priceText = `Smakelijk eten!`;
+                }
+
+                document.getElementById('comboTotalPrice').innerText = priceText;
+            }
+        }
+    </script>
+</body>
+</html>
